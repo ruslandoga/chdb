@@ -37,6 +37,6 @@ jobs:
 
       - run: mix deps.get --only $MIX_ENV
       - run: mix format --check-formatted
+      - run: wget https://github.com/metrico/libchdb/releases/latest/download/libchdb.zip && unzip libchdb.zip && sudo mv libchdb.so /usr/lib/libchdb.so
       - run: mix compile --warnings-as-errors
-      - run: wget https://github.com/metrico/libchdb/releases/latest/download/libchdb.zip && unzip libchdb.zip && mv libchdb.so /usr/lib/libchdb.so
       - run: mix test
