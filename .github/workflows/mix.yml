@@ -1,4 +1,4 @@
-name: test
+name: mix
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     branches: [master]
 
 jobs:
-  mix:
+  test:
     runs-on: ubuntu-latest
 
     env:
@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        elixir: ["1.15"]
+        elixir: ["1.15", "1.16"]
         otp: ["25", "26"]
 
     steps:
@@ -36,7 +36,26 @@ jobs:
             test-otp-${{ matrix.otp }}-elixir-${{ matrix.elixir }}-ref-refs/heads/master-mix-
 
       - run: mix deps.get --only $MIX_ENV
-      - run: mix format --check-formatted
-      - run: wget https://github.com/metrico/libchdb/releases/latest/download/libchdb.zip && unzip libchdb.zip && sudo mv libchdb.so /usr/lib/libchdb.so
       - run: mix compile --warnings-as-errors
       - run: mix test
+
+  format:
+    runs-on: ubuntu-latest
+
+    env:
+      MIX_ENV: test
+
+    strategy:
+      matrix:
+        elixir: ["1.16"]
+        otp: ["26"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - run: mix format --check-formatted

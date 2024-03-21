@@ -62,8 +62,8 @@ ERL_NIF_TERM query_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
   argument_list[argument_list_length] = NULL;
 
-  struct local_result* result =
-      query_stable(argument_list_length, argument_list);
+  struct local_result_v2* result =
+      query_stable_v2(argument_list_length, argument_list);
 
   for (unsigned int i = 0; i < argument_list_length; i++) {
     enif_free(argument_list[i]);

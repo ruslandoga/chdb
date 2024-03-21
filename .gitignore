@@ -24,3 +24,6 @@ chdb-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# https://github.com/chdb-io/chdb/releases
+*.gz
