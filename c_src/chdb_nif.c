@@ -1,85 +1,70 @@
-#include <erl_nif.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <assert.h>
+#include <stdint.h>
 #include <string.h>
+#include <erl_nif.h>
+#include <chdb.h>
 
-#include "chdb.h"
+static ERL_NIF_TERM am_error;
+static ERL_NIF_TERM am_system_limit;
 
-static ERL_NIF_TERM make_atom(ErlNifEnv* env, const char* atom_name) {
-  ERL_NIF_TERM atom;
-
-  if (enif_make_existing_atom(env, atom_name, &atom, ERL_NIF_LATIN1)) {
-    return atom;
-  }
-
-  return enif_make_atom(env, atom_name);
-}
-static ERL_NIF_TERM make_binary(ErlNifEnv* env, const void* bytes,
-                                unsigned int size) {
-  ErlNifBinary blob;
-  ERL_NIF_TERM term;
-
-  if (!enif_alloc_binary(size, &blob)) {
-    return make_atom(env, "out_of_memory");
-  }
-
-  memcpy(blob.data, bytes, size);
-  term = enif_make_binary(env, &blob);
-  enif_release_binary(&blob);
-
-  return term;
+static int
+on_load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
+{
+  am_error = enif_make_atom(env, "error");
+  am_system_limit = enif_make_atom(env, "system_limit");
+  return 0;
 }
 
-ERL_NIF_TERM query_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
-  unsigned int argument_list_length = 0;
-  ERL_NIF_TERM eos = enif_make_int(env, 0);
+static ERL_NIF_TERM
+make_binary(ErlNifEnv *env, const char *bytes, size_t size)
+{
+  ERL_NIF_TERM bin;
+  uint8_t *data = enif_make_new_binary(env, size, &bin);
+  memcpy(data, bytes, size);
+  return bin;
+}
 
-  ERL_NIF_TERM list;
-  ERL_NIF_TERM head;
-  ERL_NIF_TERM tail;
-
-  if (!enif_get_list_length(env, argv[0], &argument_list_length)) {
+static ERL_NIF_TERM
+query_nif(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+  unsigned int chdb_argc;
+  if (!enif_get_list_length(env, argv[0], &chdb_argc))
     return enif_make_badarg(env);
-  }
 
-  list = argv[0];
-  char* argument_list[argument_list_length + 1];
+  char *chdb_argv[chdb_argc];
 
-  for (unsigned int i = 0; i < argument_list_length; i++) {
-    enif_get_list_cell(env, list, &head, &tail);
-    ErlNifBinary bin;
+  ERL_NIF_TERM head, tail;
+  ERL_NIF_TERM list = argv[0];
 
-    if (!enif_inspect_iolist_as_binary(env, enif_make_list2(env, head, eos),
-                                       &bin)) {
+  for (unsigned int i = 0; i < chdb_argc; i++)
+  {
+    if (!enif_get_list_cell(env, list, &head, &tail))
       return enif_make_badarg(env);
-    }
 
-    argument_list[i] = enif_alloc(bin.size + 1);
-    memcpy(argument_list[i], bin.data, bin.size);
-    argument_list[i][bin.size] = '\0';
+    ErlNifBinary arg;
+    if (!enif_inspect_iolist_as_binary(env, head, &arg))
+      return enif_make_badarg(env);
+
+    chdb_argv[i] = (char *)arg.data;
     list = tail;
   }
 
-  argument_list[argument_list_length] = NULL;
+  struct local_result_v2 *chdb_result = query_stable_v2(chdb_argc, chdb_argv);
 
-  struct local_result_v2* result =
-      query_stable_v2(argument_list_length, argument_list);
+  if (chdb_result == NULL)
+    return am_error;
 
-  for (unsigned int i = 0; i < argument_list_length; i++) {
-    enif_free(argument_list[i]);
-  }
+  // TODO find out when it's set
+  assert(chdb_result->error_message == NULL);
 
-  if (result == NULL) {
-    return enif_make_tuple2(env, make_atom(env, "error"),
-                            make_atom(env, "query_failed"));
-  }
-
-  ERL_NIF_TERM output = make_binary(env, result->buf, result->len);
-  return enif_make_tuple2(env, make_atom(env, "ok"), output);
+  ERL_NIF_TERM result = make_binary(env, chdb_result->buf, chdb_result->len);
+  free_result_v2(chdb_result);
+  return result;
 }
 
 static ErlNifFunc nif_funcs[] = {
-    {"query_nif", 1, query_nif, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"query_dirty_io_nif", 1, query_nif, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"query_dirty_cpu_nif", 1, query_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND},
 };
 
-ERL_NIF_INIT(Elixir.ChDB.Nif, nif_funcs, NULL, NULL, NULL, NULL);
+ERL_NIF_INIT(Elixir.ChDB, nif_funcs, on_load, NULL, NULL, NULL)

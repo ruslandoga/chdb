@@ -14,8 +14,8 @@ jobs:
 
     strategy:
       matrix:
-        elixir: ["1.15", "1.16"]
-        otp: ["25", "26"]
+        elixir: [1.17]
+        otp: [27]
 
     steps:
       - uses: actions/checkout@v4
@@ -30,32 +30,35 @@ jobs:
           path: |
             deps
             _build
-          key: test-otp-${{ matrix.otp }}-elixir-${{ matrix.elixir }}-ref-${{ github.head_ref || github.ref }}-mix-${{ hashFiles('**/mix.lock') }}
+          key: test-${{ matrix.otp }}-${{ matrix.elixir }}-${{ github.head_ref || github.ref }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            test-otp-${{ matrix.otp }}-elixir-${{ matrix.elixir }}-ref-${{ github.head_ref || github.ref }}-mix-
-            test-otp-${{ matrix.otp }}-elixir-${{ matrix.elixir }}-ref-refs/heads/master-mix-
+            test-${{ matrix.otp }}-${{ matrix.elixir }}-${{ github.head_ref || github.ref }}-
+            test-${{ matrix.otp }}-${{ matrix.elixir }}-refs/heads/master-
+
+      - name: INSTALLING CHDB
+        env:
+          CHDB_VERSION: v2.1.1
+          CHDB_KERNEL: linux
+          CHDB_ARCH: x86_64
+        run: |
+          curl -L https://github.com/chdb-io/chdb/releases/download/${CHDB_VERSION}/${CHDB_KERNEL}-${CHDB_ARCH}-libchdb.tar.gz -o libchdb.tar.gz
+          mkdir libchdb
+          tar -xvzf libchdb.tar.gz -C libchdb
 
       - run: mix deps.get --only $MIX_ENV
       - run: mix compile --warnings-as-errors
+        env:
+          CHDB_NIF_LDFLAGS: -L./libchdb -Wl,-rpath=./libchdb
+
       - run: mix test
 
   format:
     runs-on: ubuntu-latest
-
-    env:
-      MIX_ENV: test
-
-    strategy:
-      matrix:
-        elixir: ["1.16"]
-        otp: ["26"]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ matrix.elixir }}
-          otp-version: ${{ matrix.otp }}
-
+          elixir-version: 1
+          otp-version: 27
+      - run: elixir -v
       - run: mix format --check-formatted

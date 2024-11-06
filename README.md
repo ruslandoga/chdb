@@ -4,15 +4,14 @@ Elixir bindings for [ChDB.](https://github.com/chdb-io/chdb)
 
 ### Trying it out
 
-```console
-$ docker run --rm -ti hexpm/elixir:1.15.5-erlang-26.0.2-ubuntu-jammy-20230126 bash
-$ apt update
-$ apt install git curl build-essential
-$ iex
+```sh
+curl -LO https://github.com/chdb-io/chdb/releases/download/v2.1.1/macos-arm64-libchdb.tar.gz -o libchdb.tar.gz
+tar -xvzf macos-arm64-libchdb.tar.gz
+export CHDB_NIF_LDFLAGS="-L."
 ```
 
 ```elixir
 iex> Mix.install [{:chdb, github: "ruslandoga/chdb"}]
-iex> ChDB.query(["--query", "select 42 format CSV"])
-{:ok, "42\n"}
+iex> ChDB.query_dirty_cpu(["--query", "select 42 format CSV"])
+"42\n"
 ```

@@ -5,7 +5,7 @@ defmodule ChDB.MixProject do
     [
       app: :chdb,
       version: "0.1.0",
-      elixir: "~> 1.15",
+      elixir: "~> 1.17",
       compilers: [:elixir_make | Mix.compilers()],
       make_targets: ["all"],
       make_clean: ["clean"],
@@ -16,9 +16,7 @@ defmodule ChDB.MixProject do
 
   # Run "mix help compile.app" to learn about applications.
   def application do
-    [
-      extra_applications: [:logger]
-    ]
+    [extra_applications: [:logger]]
   end
 
   # Run "mix help deps" to learn about dependencies.
