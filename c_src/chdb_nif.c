@@ -4,14 +4,12 @@
 #include <erl_nif.h>
 #include <chdb.h>
 
-static ERL_NIF_TERM am_error;
-static ERL_NIF_TERM am_system_limit;
+static ERL_NIF_TERM am_nil;
 
 static int
 on_load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
 {
-  am_error = enif_make_atom(env, "error");
-  am_system_limit = enif_make_atom(env, "system_limit");
+  am_nil = enif_make_atom(env, "nil");
   return 0;
 }
 
@@ -51,8 +49,9 @@ query_nif(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
   struct local_result_v2 *chdb_result = query_stable_v2(chdb_argc, chdb_argv);
 
+  // TODO when does this happen?
   if (chdb_result == NULL)
-    return am_error;
+    return am_nil;
 
   // TODO find out when it's set
   assert(chdb_result->error_message == NULL);

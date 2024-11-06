@@ -1,36 +1,34 @@
 defmodule ChDB do
   @moduledoc "ChDB bindings for Elixir"
 
-  @doc """
+  @doc ~S"""
   Executes a query on a Dirty IO scheduler.
 
   Example:
 
-      iex> <<_::size(10000*64)>> = ChDB.query_dirty_io(_args = ["--format", "RowBinary", "--query", "select * from system.numbers limit 10000"])
+      iex> ChDB.query_dirty_io(["--query", "select 1"])
+      "1\n"
 
   """
+  @spec query_dirty_io([arg :: binary]) :: binary | nil
   def query_dirty_io(args) do
-    case query_dirty_io_nif(build_args(args)) do
-      result when is_binary(result) -> result
-      :error -> raise "query failed"
-    end
+    query_dirty_io_nif(build_args(args))
   end
 
   defp query_dirty_io_nif(_args), do: :erlang.nif_error(:undef)
 
-  @doc """
+  @doc ~S"""
   Executes a query on a Dirty CPU scheduler.
 
   Example:
 
-      iex> <<_::size(10000*64)>> = ChDB.query_dirty_cpu(_args = ["--format", "RowBinary", "--query", "select * from system.numbers limit 10000"])
+      iex> ChDB.query_dirty_cpu(["--query", "select 1"])
+      "1\n"
 
   """
+  @spec query_dirty_cpu([arg :: binary]) :: binary | nil
   def query_dirty_cpu(args) do
-    case query_dirty_cpu_nif(build_args(args)) do
-      result when is_binary(result) -> result
-      :error -> raise "query failed"
-    end
+    query_dirty_cpu_nif(build_args(args))
   end
 
   defp query_dirty_cpu_nif(_args), do: :erlang.nif_error(:undef)
