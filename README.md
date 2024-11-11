@@ -1,6 +1,6 @@
 # ChDB
 
-Elixir bindings for [ChDB.](https://github.com/chdb-io/chdb)
+Elixir bindings for [chDB.](https://github.com/chdb-io/chdb)
 
 ### Trying it out
 
